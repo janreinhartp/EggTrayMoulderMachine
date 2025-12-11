@@ -24,6 +24,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <Servo.h>
 
 // Configuration includes
 #include "HardwareConfig.h"
@@ -35,12 +36,50 @@
 #include <ButtonController.h>
 #include <MenuController.h>
 #include <DisplayController.h>
+#include <LogController.h>
 
 // ==================== GLOBAL OBJECTS ====================
 
 ButtonController buttonController;
 MenuController menuController;
 DisplayController displayController;
+Servo starchServo;
+
+// ==================== RELAY STATE TRACKING ====================
+
+// Relay states (true = ON/closed, false = OFF/open)
+bool relayStates[24] = {false}; // 16 relays on PCF8575_1 + 8 relays on PCF8575_2
+
+// Servo state
+int servoAngle = 0;  // Current servo angle (0-180)
+
+// Relay names for display
+const char* relayNames[24] = {
+    "Spare 1",          // 0  - PCF8575_1 P0
+    "Heater",           // 1  - PCF8575_1 P1
+    "Spare 2",          // 2  - PCF8575_1 P2
+    "Valve",            // 3  - PCF8575_1 P3
+    "Shredder Power",   // 4  - PCF8575_1 P4
+    "Mixer",            // 5  - PCF8575_1 P5
+    "Pump",             // 6  - PCF8575_1 P6
+    "Spare 3",          // 7  - PCF8575_1 P7
+    "Defective 1",      // 8  - PCF8575_1 P8
+    "Screw",            // 9  - PCF8575_1 P9
+    "Conveyor",         // 10 - PCF8575_1 P10
+    "Defective 2",      // 11 - PCF8575_1 P11
+    "Shredder Trigger", // 12 - PCF8575_1 P12
+    "Linear Door",      // 13 - PCF8575_1 P13
+    "Spare 5",          // 14 - PCF8575_1 P14
+    "Spare 6",          // 15 - PCF8575_1 P15
+    "Vacuum",           // 16 - PCF8575_2 P0
+    "Blower",           // 17 - PCF8575_2 P1
+    "Mould A V/B",      // 18 - PCF8575_2 P2
+    "Vacuum A/B",       // 19 - PCF8575_2 P3
+    "Blower A/B",       // 20 - PCF8575_2 P4
+    "Mould B V/B",      // 21 - PCF8575_2 P5
+    "Fwd/Rev",          // 22 - PCF8575_2 P6
+    "Up/Down"           // 23 - PCF8575_2 P7
+};
 
 // ==================== FORWARD DECLARATIONS ====================
 
@@ -49,6 +88,83 @@ void updateDisplay(const char* line1, const char* line2, bool editing);
 
 // Process functions (to be implemented in future steps)
 void processAutoRun();
+
+// Relay control functions
+void setRelay(uint8_t relayIndex, bool state);
+void toggleRelay(uint8_t relayIndex);
+
+// ==================== RELAY CONTROL FUNCTIONS ====================
+
+void setRelay(uint8_t relayIndex, bool state) {
+    if (relayIndex >= 24) return;
+    
+    relayStates[relayIndex] = state;
+    
+    // Relays are active LOW (LOW = ON, HIGH = OFF)
+    uint8_t pinState = state ? LOW : HIGH;
+    
+    if (relayIndex < 16) {
+        // PCF8575_1 (relays 0-15)
+        pcf8575_1.digitalWrite(relayIndex, pinState);
+    } else {
+        // PCF8575_2 (relays 16-23 map to pins 0-7)
+        pcf8575_2.digitalWrite(relayIndex - 16, pinState);
+    }
+}
+
+void toggleRelay(uint8_t relayIndex) {
+    if (relayIndex >= 24) return;
+    setRelay(relayIndex, !relayStates[relayIndex]);
+    
+    // Force menu refresh to show updated state
+    menuController.refresh();
+}
+
+// Individual relay toggle functions for menu actions
+void toggleRelay0() { toggleRelay(0); }
+void toggleRelay1() { toggleRelay(1); }
+void toggleRelay2() { toggleRelay(2); }
+void toggleRelay3() { toggleRelay(3); }
+void toggleRelay4() { toggleRelay(4); }
+void toggleRelay5() { toggleRelay(5); }
+void toggleRelay6() { toggleRelay(6); }
+void toggleRelay7() { toggleRelay(7); }
+void toggleRelay8() { toggleRelay(8); }
+void toggleRelay9() { toggleRelay(9); }
+void toggleRelay10() { toggleRelay(10); }
+void toggleRelay11() { toggleRelay(11); }
+void toggleRelay12() { toggleRelay(12); }
+void toggleRelay13() { toggleRelay(13); }
+void toggleRelay14() { toggleRelay(14); }
+void toggleRelay15() { toggleRelay(15); }
+void toggleRelay16() { toggleRelay(16); }
+void toggleRelay17() { toggleRelay(17); }
+void toggleRelay18() { toggleRelay(18); }
+void toggleRelay19() { toggleRelay(19); }
+void toggleRelay20() { toggleRelay(20); }
+void toggleRelay21() { toggleRelay(21); }
+void toggleRelay22() { toggleRelay(22); }
+void toggleRelay23() { toggleRelay(23); }
+
+// Servo control functions
+void setServoAngle(int angle) {
+    if (angle < 0) angle = 0;
+    if (angle > 180) angle = 180;
+    servoAngle = angle;
+    starchServo.write(servoAngle);
+    logger.info("Servo", "Angle set to", servoAngle);
+}
+
+void toggleServo() {
+    if (servoAngle == 180) {
+        setServoAngle(0);   // Close position
+        displayController.showStatus("Servo: Close", 1000);
+    } else {
+        setServoAngle(180); // Open position
+        displayController.showStatus("Servo: Open", 1000);
+    }
+    menuController.refresh();
+}
 
 // ==================== MENU ACTION FUNCTIONS ====================
 
@@ -67,17 +183,18 @@ void stopAutoRun() {
     menuController.reset();
 }
 
-void enterTestMode() {
-    Serial.println("Entering Test Mode...");
-    testMode = true;
-    displayController.showStatus("Test Mode", 1000);
-}
-
 void exitTestMode() {
-    Serial.println("Exiting Test Mode...");
-    testMode = false;
-    menuController.reset();
-    displayController.showStatus("Test Exit", 1000);
+    logger.info("Test", "Exiting Test Mode");
+    
+    // Turn off all relays when exiting test mode
+    for (uint8_t i = 0; i < 24; i++) {
+        if (relayStates[i]) {
+            setRelay(i, false);
+        }
+    }
+    
+    displayController.showStatus("All Relays OFF", 1000);
+    menuController.goBack();
 }
 
 void saveSettings() {
@@ -97,26 +214,40 @@ void updateDisplay(const char* line1, const char* line2, bool editing) {
     displayController.displayText(line1, line2, editing);
 }
 
+void updateDisplay4Line(const char* line1, const char* line2, const char* line3, const char* line4) {
+    displayController.displayText4Line(line1, line2, line3, line4);
+}
+
 // ==================== SETUP ====================
 
 void setup() {
     // Initialize serial
     Serial.begin(115200);
-    delay(1000);
-    Serial.println("\n\n=================================");
-    Serial.println("Egg Tray Moulder Machine v1.0");
-    Serial.println("=================================\n");
+    delay(2000);  // Wait for serial to be ready
     
-    // Initialize I2C
-    Wire.begin(SDA_PIN, SCL_PIN);
-    Serial.println("I2C initialized");
+    // Send some test output to verify serial is working
+    Serial.println("\n\n\n");
+    Serial.println("========================================");
+    Serial.println("Serial Monitor Connected");
+    Serial.println("========================================");
+    
+    // Initialize logger with DEBUG level
+    logger.init(LOG_DEBUG, true);
+    
+    logger.separator();
+    logger.info("MAIN", "Egg Tray Moulder Machine v1.0");
+    logger.separator();
+    
+    // Initialize I2C (uses default pins: SDA=20, SCL=21 on Arduino Mega)
+    Wire.begin();
+    logger.info("I2C", "Initialized on default pins (SDA=20, SCL=21)");
     
     // Initialize PCF8575 expanders
     pcf8575_1.begin();
-    Serial.println("PCF8575 #1 initialized (16-ch relay)");
+    logger.info("PCF8575_1", "Initialized at address 0x25");
     
     pcf8575_2.begin();
-    Serial.println("PCF8575 #2 initialized (8-ch relay + buttons)");
+    logger.info("PCF8575_2", "Initialized at address 0x22");
     
     // Set all relay pins as outputs (default HIGH = relay OFF)
     for (uint8_t i = 0; i <= 15; i++) {
@@ -128,37 +259,91 @@ void setup() {
         pcf8575_2.digitalWrite(i, HIGH);  // Relay OFF
     }
     
+    // Configure direct GPIO pins for buttons and sensors
+    pinMode(BTN_UP, INPUT_PULLUP);
+    pinMode(BTN_ENTER, INPUT_PULLUP);
+    pinMode(BTN_DOWN, INPUT_PULLUP);
+    pinMode(SENSOR_WATER_FLOW, INPUT_PULLUP);
+    pinMode(SENSOR_IR_TRAY, INPUT_PULLUP);
+    logger.info("GPIO", "Buttons and sensors configured on direct pins");
+    
     // Initialize display
     displayController.init(LCD_I2C_ADDRESS, 20, 4);
+    logger.info("LCD", "Display initialized");
     displayController.showStartup("Egg Tray Moulder", "v1.0");
     delay(2000);
     
-    // Initialize buttons (connected via PCF8575 #2)
-    buttonController.init(BTN_ENTER, BTN_UP, BTN_DOWN, &pcf8575_2);
+    // Initialize servo
+    starchServo.attach(SERVO_PIN);
+    starchServo.write(0);  // Start at closed position (0 degrees)
+    servoAngle = 0;
+    logger.info("Servo", "Initialized on pin", SERVO_PIN);
+    
+    // Test reading direct GPIO pins before button init
+    logger.info("GPIO", "Reading button pins before init...");
+    logger.info("GPIO", "Pin 2 (Up)", digitalRead(BTN_UP) ? "HIGH" : "LOW");
+    logger.info("GPIO", "Pin 3 (Enter)", digitalRead(BTN_ENTER) ? "HIGH" : "LOW");
+    logger.info("GPIO", "Pin 4 (Down)", digitalRead(BTN_DOWN) ? "HIGH" : "LOW");
+    
+    // Initialize buttons (now using direct GPIO, not PCF8575)
+    logger.debug("BTN", "Initializing buttons...");
+    logger.debug("BTN", "Up pin", BTN_UP);
+    logger.debug("BTN", "Enter pin", BTN_ENTER);
+    logger.debug("BTN", "Down pin", BTN_DOWN);
+    buttonController.init(BTN_ENTER, BTN_UP, BTN_DOWN, nullptr);  // nullptr = direct GPIO
     
     // Link menu structure
     linkMenus();
+    logger.info("MENU", "Menu structure linked");
     
     // Initialize menu system
     menuController.init(menuLayers, TOTAL_LAYERS);
     menuController.setDisplayCallback(updateDisplay);
+    menuController.setDisplay4LineCallback(updateDisplay4Line);
+    logger.info("MENU", "Menu controller initialized");
     
     // Show initial menu
-    char line1[21], line2[21];
-    bool editing;
-    menuController.getCurrentDisplay(line1, line2, editing);
-    displayController.displayText(line1, line2, editing);
+    menuController.refresh();
     
-    Serial.println("\n=== System Ready ===\n");
+    logger.separator();
+    logger.info("MAIN", "System Ready");
+    logger.separator();
 }
 
 // ==================== MAIN LOOP ====================
 
 void loop() {
+    // Read raw GPIO pin states every second for debugging
+    static unsigned long lastRawRead = 0;
+    if (millis() - lastRawRead > 1000) {
+        logger.debug("RAW", "Pin 2 (Up)", digitalRead(BTN_UP) ? "HIGH" : "LOW");
+        logger.debug("RAW", "Pin 3 (Enter)", digitalRead(BTN_ENTER) ? "HIGH" : "LOW");
+        logger.debug("RAW", "Pin 4 (Down)", digitalRead(BTN_DOWN) ? "HIGH" : "LOW");
+        lastRawRead = millis();
+    }
+    
     // Update button states
     ButtonState enterState = buttonController.getEnterState();
     ButtonState upState = buttonController.getUpState();
     ButtonState downState = buttonController.getDownState();
+    
+    // Debug log button state changes
+    static ButtonState lastEnter = BUTTON_IDLE;
+    static ButtonState lastUp = BUTTON_IDLE;
+    static ButtonState lastDown = BUTTON_IDLE;
+    
+    if (enterState != BUTTON_IDLE && enterState != lastEnter) {
+        logger.debug("BTN", "Enter button state", (int)enterState);
+        lastEnter = enterState;
+    }
+    if (upState != BUTTON_IDLE && upState != lastUp) {
+        logger.debug("BTN", "Up button state", (int)upState);
+        lastUp = upState;
+    }
+    if (downState != BUTTON_IDLE && downState != lastDown) {
+        logger.debug("BTN", "Down button state", (int)downState);
+        lastDown = downState;
+    }
     
     // Handle button inputs
     if (menuController.getState() == MENU_STATE_BROWSING) {

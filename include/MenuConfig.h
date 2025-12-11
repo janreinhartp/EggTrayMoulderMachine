@@ -11,10 +11,43 @@
 // Forward declarations of menu action functions
 void startAutoRun();
 void stopAutoRun();
-void enterTestMode();
 void exitTestMode();
 void saveSettings();
 void resetToDefaults();
+
+// Relay toggle functions
+void toggleRelay0();
+void toggleRelay1();
+void toggleRelay2();
+void toggleRelay3();
+void toggleRelay4();
+void toggleRelay5();
+void toggleRelay6();
+void toggleRelay7();
+void toggleRelay8();
+void toggleRelay9();
+void toggleRelay10();
+void toggleRelay11();
+void toggleRelay12();
+void toggleRelay13();
+void toggleRelay14();
+void toggleRelay15();
+void toggleRelay16();
+void toggleRelay17();
+void toggleRelay18();
+void toggleRelay19();
+void toggleRelay20();
+void toggleRelay21();
+void toggleRelay22();
+void toggleRelay23();
+
+// Servo control functions
+void toggleServo();
+
+// External references to relay states
+extern bool relayStates[24];
+extern const char* relayNames[24];
+extern int servoAngle;
 
 // External references to settings variables
 extern int waterAmount;
@@ -57,7 +90,7 @@ extern MenuLayer menuLayers[];
 #define MIXER_MENU_COUNT 3
 #define MOULDING_MENU_COUNT 4
 #define DRYING_MENU_COUNT 3
-#define TEST_MENU_COUNT 1
+#define TEST_MENU_COUNT 19
 #define RUNNING_MENU_COUNT 1
 #define TOTAL_LAYERS 10
 

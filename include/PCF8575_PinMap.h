@@ -7,22 +7,22 @@
  * P0-P15: Connected to 16-channel relay board
  * 
  * Pin Layout:
- * P0  = Relay 1   (Water Valve)
- * P1  = Relay 2   (Paper Shredder Motor)
- * P2  = Relay 3   (Starch Screw Dispenser)
- * P3  = Relay 4   (Mixer Motor)
- * P4  = Relay 5   (Linear Motor - Mixer Open)
- * P5  = Relay 6   (Pump Motor - Pulp Cycle)
- * P6  = Relay 7   (Cylinder A Up)
- * P7  = Relay 8   (Cylinder A Down)
- * P8  = Relay 9   (Cylinder B Forward)
- * P9  = Relay 10  (Cylinder B Backward)
- * P10 = Relay 11  (Suction Valve)
- * P11 = Relay 12  (Blower Valve)
- * P12 = Relay 13  (Valve A - Suction/Blower Routing)
- * P13 = Relay 14  (Valve B - Suction/Blower Routing)
- * P14 = Relay 15  (Conveyor Motor)
- * P15 = Relay 16  (Heater Blower)
+ * P0  = Relay 1   (Spare 1)
+ * P1  = Relay 2   (Heater)
+ * P2  = Relay 3   (Spare 2)
+ * P3  = Relay 4   (Valve)
+ * P4  = Relay 5   (Shredder Power)
+ * P5  = Relay 6   (Mixer)
+ * P6  = Relay 7   (Pump)
+ * P7  = Relay 8   (Spare 3)
+ * P8  = Relay 9   (Defective)
+ * P9  = Relay 10  (Screw)
+ * P10 = Relay 11  (Conveyor)
+ * P11 = Relay 12  (Defective)
+ * P12 = Relay 13  (Shredder Trigger On)
+ * P13 = Relay 14  (Linear Door)
+ * P14 = Relay 15  (Spare 5)
+ * P15 = Relay 16  (Spare 6)
  * 
  * 
  * PCF8575 #2 (Address 0x21) - 8 Channel Relay + Buttons + Sensors
@@ -31,14 +31,14 @@
  * P8-P12: Buttons and sensors (inputs with pullup)
  * 
  * Pin Layout:
- * P0  = Relay 1   (Valve C - Suction/Blower Routing)
- * P1  = Relay 2   (Valve D - Suction/Blower Routing)
- * P2  = Relay 3   (Reserved)
- * P3  = Relay 4   (Reserved)
- * P4  = Relay 5   (Reserved)
- * P5  = Relay 6   (Reserved)
- * P6  = Relay 7   (Reserved)
- * P7  = Relay 8   (Reserved)
+ * P0  = Relay 1   (Vacuum)
+ * P1  = Relay 2   (Blower)
+ * P2  = Relay 3   (Mould A - Vacuum/Blower)
+ * P3  = Relay 4   (Vacuum - A/B)
+ * P4  = Relay 5   (Blower - A/B)
+ * P5  = Relay 6   (Mould B - Vacuum/Blower)
+ * P6  = Relay 7   (Forward/Reverse)
+ * P7  = Relay 8   (Up/Down)
  * P8  = Input     (Enter Button)
  * P9  = Input     (Up Button)
  * P10 = Input     (Down Button)
@@ -59,38 +59,39 @@
 #define PCF8575_PINMAP_H
 
 // PCF8575 #1 - 16 Channel Relay Board Pins
-#define RELAY_WATER_VALVE        0
-#define RELAY_SHREDDER           1
-#define RELAY_STARCH_SCREW       2
-#define RELAY_MIXER              3
-#define RELAY_MIXER_LINEAR       4
-#define RELAY_PULP_PUMP          5
-#define RELAY_CYL_A_UP           6
-#define RELAY_CYL_A_DOWN         7
-#define RELAY_CYL_B_FWD          8
-#define RELAY_CYL_B_BACK         9
-#define RELAY_SUCTION_VALVE      10
-#define RELAY_BLOWER_VALVE       11
-#define RELAY_VALVE_A            12
-#define RELAY_VALVE_B            13
-#define RELAY_CONVEYOR           14
-#define RELAY_HEATER_BLOWER      15
-
+#define RELAY_SPARE_1            P0
+#define RELAY_HEATER             P1
+#define RELAY_SPARE_2            P2
+#define RELAY_VALVE              P3
+#define RELAY_SHREDDER_POWER     P4
+#define RELAY_MIXER              P5
+#define RELAY_PUMP               P6
+#define RELAY_SPARE_3            P7
+#define RELAY_DEFECTIVE_1        P8
+#define RELAY_SCREW              P9
+#define RELAY_CONVEYOR           P10
+#define RELAY_DEFECTIVE_2        P11
+#define RELAY_SHREDDER_TRIGGER   P12
+#define RELAY_LINEAR_DOOR        P13
+#define RELAY_SPARE_5            P14
+#define RELAY_SPARE_6            P15
 // PCF8575 #2 - 8 Channel Relay Pins
-#define RELAY_VALVE_C            0
-#define RELAY_VALVE_D            1
-#define RELAY_SPARE_1            2
-#define RELAY_SPARE_2            3
-#define RELAY_SPARE_3            4
-#define RELAY_SPARE_4            5
-#define RELAY_SPARE_5            6
-#define RELAY_SPARE_6            7
+#define RELAY_VACUUM             P0
+#define RELAY_BLOWER             P1
+#define RELAY_MOULD_A_VAC_BLOW   P2
+#define RELAY_VACUUM_AB          P3
+#define RELAY_BLOWER_AB          P4
+#define RELAY_MOULD_B_VAC_BLOW   P5
+#define RELAY_FORWARD_REVERSE    P6
+#define RELAY_UP_DOWN            P7
 
-// PCF8575 #2 - Input Pins
-#define BTN_ENTER                8
-#define BTN_UP                   9
-#define BTN_DOWN                 10
-#define SENSOR_FLOW              11
-#define SENSOR_IR_TRAY           12
+// Note: Buttons and sensors moved to direct Arduino GPIO pins
+// See HardwareConfig.h for:
+// - BTN_UP (Pin 2)
+// - BTN_ENTER (Pin 3)
+// - BTN_DOWN (Pin 4)
+// - SENSOR_WATER_FLOW (Pin 5)
+// - SERVO_PIN (Pin 6)
+// - SENSOR_IR_TRAY (Pin 7)
 
 #endif // PCF8575_PINMAP_H

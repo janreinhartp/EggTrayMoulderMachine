@@ -33,6 +33,7 @@ public:
     // Display text on specific lines
     void displayText(const char* line1, const char* line2 = nullptr, bool editing = false);
     void displayText(String line1, String line2 = "", bool editing = false);
+    void displayText4Line(const char* line1, const char* line2, const char* line3, const char* line4);
     
     // Clear display
     void clear();

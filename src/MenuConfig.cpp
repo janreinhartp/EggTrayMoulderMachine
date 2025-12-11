@@ -7,7 +7,7 @@
 MenuItem mainMenuItems[MAIN_MENU_COUNT] = {
     {"Settings", MENU_ITEM_SUBMENU, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Run Auto", MENU_ITEM_ACTION, startAutoRun, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Test Machine", MENU_ITEM_ACTION, enterTestMode, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr}
+    {"Test Machine", MENU_ITEM_SUBMENU, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr}
 };
 
 // Settings submenu items
@@ -66,6 +66,24 @@ MenuItem dryingMenuItems[DRYING_MENU_COUNT] = {
 
 // Test mode menu items
 MenuItem testMenuItems[TEST_MENU_COUNT] = {
+    {"Heater", MENU_ITEM_ACTION, toggleRelay1, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Valve", MENU_ITEM_ACTION, toggleRelay3, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Shredder Power", MENU_ITEM_ACTION, toggleRelay4, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Mixer", MENU_ITEM_ACTION, toggleRelay5, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Pump", MENU_ITEM_ACTION, toggleRelay6, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Screw", MENU_ITEM_ACTION, toggleRelay9, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Conveyor", MENU_ITEM_ACTION, toggleRelay10, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Shredder Trigger", MENU_ITEM_ACTION, toggleRelay12, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Linear Door", MENU_ITEM_ACTION, toggleRelay13, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Vacuum", MENU_ITEM_ACTION, toggleRelay16, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Blower", MENU_ITEM_ACTION, toggleRelay17, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Mould A V/B", MENU_ITEM_ACTION, toggleRelay18, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Vacuum A/B", MENU_ITEM_ACTION, toggleRelay19, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Blower A/B", MENU_ITEM_ACTION, toggleRelay20, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Mould B V/B", MENU_ITEM_ACTION, toggleRelay21, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Fwd/Rev", MENU_ITEM_ACTION, toggleRelay22, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Up/Down", MENU_ITEM_ACTION, toggleRelay23, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Starch Servo", MENU_ITEM_ACTION, toggleServo, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Exit Test", MENU_ITEM_ACTION, exitTestMode, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr}
 };
 
@@ -95,6 +113,9 @@ void linkMenus() {
     // Link main menu submenus
     mainMenuItems[0].subMenu = settingsMenuItems;
     mainMenuItems[0].subMenuSize = SETTINGS_MENU_COUNT;
+    
+    mainMenuItems[2].subMenu = testMenuItems;
+    mainMenuItems[2].subMenuSize = TEST_MENU_COUNT;
     
     // Link settings submenus
     settingsMenuItems[0].subMenu = waterMenuItems;

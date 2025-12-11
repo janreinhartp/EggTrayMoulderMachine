@@ -51,17 +51,22 @@ void DisplayController::displayText(const char* line1, const char* line2, bool e
         currentLine2 = l2;
         currentEditMode = editing;
         
-        // Clear and display
+        // Clear display properly
         lcd->clear();
+        delay(5); // Small delay for LCD to process
         
-        // Line 1
+        // Line 1 - pad with spaces to clear remnants
         lcd->setCursor(0, 0);
-        lcd->print(currentLine1);
+        char padded1[21];
+        snprintf(padded1, 21, "%-20s", currentLine1.c_str());
+        lcd->print(padded1);
         
-        // Line 2
+        // Line 2 - pad with spaces to clear remnants
         if (currentLine2.length() > 0) {
             lcd->setCursor(0, 1);
-            lcd->print(currentLine2);
+            char padded2[21];
+            snprintf(padded2, 21, "%-20s", currentLine2.c_str());
+            lcd->print(padded2);
         }
         
         // Show cursor if editing
@@ -78,6 +83,38 @@ void DisplayController::displayText(const char* line1, const char* line2, bool e
 
 void DisplayController::displayText(String line1, String line2, bool editing) {
     displayText(line1.c_str(), line2.c_str(), editing);
+}
+
+void DisplayController::displayText4Line(const char* line1, const char* line2, const char* line3, const char* line4) {
+    if (!initialized || !lcd) return;
+    
+    // Clear display
+    lcd->clear();
+    delay(5);
+    
+    // Line 1 (row 0)
+    lcd->setCursor(0, 0);
+    char padded1[21];
+    snprintf(padded1, 21, "%-20s", line1);
+    lcd->print(padded1);
+    
+    // Line 2 (row 1)
+    lcd->setCursor(0, 1);
+    char padded2[21];
+    snprintf(padded2, 21, "%-20s", line2);
+    lcd->print(padded2);
+    
+    // Line 3 (row 2)
+    lcd->setCursor(0, 2);
+    char padded3[21];
+    snprintf(padded3, 21, "%-20s", line3);
+    lcd->print(padded3);
+    
+    // Line 4 (row 3)
+    lcd->setCursor(0, 3);
+    char padded4[21];
+    snprintf(padded4, 21, "%-20s", line4);
+    lcd->print(padded4);
 }
 
 void DisplayController::clear() {

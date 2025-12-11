@@ -4,6 +4,10 @@
 #include <Arduino.h>
 #include "PCF8575.h"
 
+// Forward declare to avoid circular dependency
+class LogController;
+extern LogController logger;
+
 // Button states
 enum ButtonState {
     BUTTON_IDLE,

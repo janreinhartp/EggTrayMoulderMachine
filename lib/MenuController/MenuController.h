@@ -2,7 +2,7 @@
 #define MENUCONTROLLER_H
 
 #include <Arduino.h>
-#include <Preferences.h>
+#include <EEPROM.h>
 
 // Menu item types
 enum MenuItemType {
@@ -67,18 +67,20 @@ private:
     int tempIntValue;
     float tempFloatValue;
     
-    // Preferences for saving settings
-    Preferences preferences;
+    // EEPROM base address for settings storage
+    int eepromAddress;
     bool prefsInitialized;
     
     // Display callback
     void (*displayCallback)(const char* line1, const char* line2, bool editing);
+    void (*displayCallback4Line)(const char* line1, const char* line2, const char* line3, const char* line4);
     
     // Helper functions
     void pushNavigation(uint8_t layerIndex);
     uint8_t popNavigation();
     void loadValueFromPrefs(MenuItem* item);
     void saveValueToPrefs(MenuItem* item);
+    void updateDisplay(); // Helper to call appropriate display callback
     
 public:
     MenuController();
@@ -88,6 +90,7 @@ public:
     
     // Set display callback function
     void setDisplayCallback(void (*callback)(const char*, const char*, bool));
+    void setDisplay4LineCallback(void (*callback)(const char*, const char*, const char*, const char*));
     
     // Navigation functions
     void navigateUp();
@@ -97,6 +100,10 @@ public:
     
     // Get current display text
     void getCurrentDisplay(char* line1, char* line2, bool& isEditing);
+    void getCurrentDisplay4Line(char* line1, char* line2, char* line3, char* line4);
+    
+    // Force display refresh
+    void refresh();
     
     // Update value while editing
     void incrementValue(bool fast);
