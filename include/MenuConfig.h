@@ -44,6 +44,12 @@ void toggleRelay23();
 // Servo control functions
 void toggleServo();
 
+// Scale calibration functions
+void startScaleCalibration();
+void calibrateScaleZero();
+void calibrateScaleWithWeight();
+void saveScaleCalibration();
+
 // External references to relay states
 extern bool relayStates[24];
 extern const char* relayNames[24];
@@ -75,6 +81,7 @@ extern MenuItem shredderMenuItems[];
 extern MenuItem mixerMenuItems[];
 extern MenuItem mouldingMenuItems[];
 extern MenuItem dryingMenuItems[];
+extern MenuItem scaleCalMenuItems[];
 extern MenuItem testMenuItems[];
 extern MenuItem runningMenuItems[];
 
@@ -83,16 +90,17 @@ extern MenuLayer menuLayers[];
 
 // Menu counts
 #define MAIN_MENU_COUNT 3
-#define SETTINGS_MENU_COUNT 8
+#define SETTINGS_MENU_COUNT 9
 #define WATER_MENU_COUNT 3
 #define STARCH_MENU_COUNT 3
 #define SHREDDER_MENU_COUNT 2
 #define MIXER_MENU_COUNT 3
 #define MOULDING_MENU_COUNT 4
 #define DRYING_MENU_COUNT 3
+#define SCALE_CAL_MENU_COUNT 4
 #define TEST_MENU_COUNT 19
 #define RUNNING_MENU_COUNT 1
-#define TOTAL_LAYERS 10
+#define TOTAL_LAYERS 11
 
 // Function to link all submenus
 void linkMenus();

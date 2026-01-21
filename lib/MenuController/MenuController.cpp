@@ -1,4 +1,9 @@
 #include "MenuController.h"
+#include <Preferences.h>
+#include <LogController.h>
+
+extern LogController logger;
+Preferences preferences;
 
 MenuController::MenuController() {
     layers = nullptr;
@@ -24,16 +29,14 @@ void MenuController::init(MenuLayer* menuLayers, uint8_t count) {
     currentState = MENU_STATE_BROWSING;
     stackPointer = 0;
     
-    // Initialize EEPROM (no initialization needed for standard EEPROM library)
+    // Initialize Preferences (ESP32 non-volatile storage)
+    preferences.begin("eggTrayMachine", false);  // Open in read-write mode
     eepromAddress = 0;
     prefsInitialized = true;
-    Serial.println("MenuController: EEPROM ready");
+    logger.debug("MenuCtrl", "Preferences ready");
     
     // Load all saved settings
     loadAllSettings();
-    
-    Serial.println("MenuController initialized");
-    Serial.print("Number of layers: "); Serial.println(layerCount);
 }
 
 void MenuController::setDisplayCallback(void (*callback)(const char*, const char*, bool)) {
@@ -81,8 +84,6 @@ void MenuController::navigateUp() {
             currentItemIndex = layers[currentLayerIndex].itemCount - 1;
         }
         
-        Serial.print("Navigate Up - Item: "); Serial.println(currentItemIndex);
-        
         // Update display
         updateDisplay();
     }
@@ -97,8 +98,6 @@ void MenuController::navigateDown() {
             // Wrap to top
             currentItemIndex = 0;
         }
-        
-        Serial.print("Navigate Down - Item: "); Serial.println(currentItemIndex);
         
         // Update display
         updateDisplay();
@@ -119,7 +118,6 @@ void MenuController::selectItem() {
                     if (layers[i].items == item->subMenu) {
                         currentLayerIndex = i;
                         currentItemIndex = 0;
-                        Serial.print("Enter submenu: "); Serial.println(layers[i].name);
                         break;
                     }
                 }
@@ -128,7 +126,6 @@ void MenuController::selectItem() {
             case MENU_ITEM_ACTION:
                 // Execute action
                 if (item->action) {
-                    Serial.print("Execute action: "); Serial.println(item->label);
                     item->action();
                 }
                 break;
@@ -143,7 +140,6 @@ void MenuController::selectItem() {
                 } else if (item->type == MENU_ITEM_VALUE_FLOAT && item->floatValue) {
                     tempFloatValue = *item->floatValue;
                 }
-                Serial.print("Start editing: "); Serial.println(item->label);
                 break;
                 
             case MENU_ITEM_BOOL:
@@ -151,8 +147,6 @@ void MenuController::selectItem() {
                 if (item->boolValue) {
                     *item->boolValue = !(*item->boolValue);
                     saveValueToPrefs(item);
-                    Serial.print("Toggle bool: "); Serial.print(item->label);
-                    Serial.print(" = "); Serial.println(*item->boolValue);
                 }
                 break;
                 
@@ -173,7 +167,6 @@ void MenuController::selectItem() {
                 *editingItem->floatValue = tempFloatValue;
             }
             saveValueToPrefs(editingItem);
-            Serial.print("Save value: "); Serial.println(editingItem->label);
         }
         currentState = MENU_STATE_BROWSING;
         editingItem = nullptr;
@@ -188,12 +181,10 @@ void MenuController::goBack() {
         // Cancel editing
         currentState = MENU_STATE_BROWSING;
         editingItem = nullptr;
-        Serial.println("Cancel editing");
     } else if (stackPointer > 0) {
         // Go back to previous menu
         currentLayerIndex = popNavigation();
         currentItemIndex = 0;
-        Serial.print("Go back to layer: "); Serial.println(layers[currentLayerIndex].name);
     }
     
     // Update display
@@ -342,7 +333,7 @@ void MenuController::getCurrentDisplay4Line(char* line1, char* line2, char* line
         extern int servoAngle;
         snprintf(line2, 21, "%s", item->label);
         snprintf(line3, 21, "Angle: %d deg", servoAngle);
-        snprintf(line4, 21, "Click to %s", servoAngle == 180 ? "Close" : "Open");
+        snprintf(line4, 21, "Click to %s", servoAngle == 0 ? "Open" : "Close");
     } else {
         // Regular relay item
         extern bool relayStates[24];
@@ -373,38 +364,22 @@ void MenuController::getCurrentDisplay4Line(char* line1, char* line2, char* line
 void MenuController::loadValueFromPrefs(MenuItem* item) {
     if (!prefsInitialized || !item->prefKey) return;
     
-    // Generate a simple hash from prefKey for EEPROM address
-    int addr = eepromAddress;
-    for (const char* p = item->prefKey; *p; p++) {
-        addr += *p;
-    }
-    addr = (addr % 100) * 4;  // Space out by 4 bytes, keep within first 400 bytes
-    
     switch (item->type) {
         case MENU_ITEM_VALUE_INT:
             if (item->intValue) {
-                EEPROM.get(addr, *item->intValue);
-                Serial.print("Load "); Serial.print(item->prefKey);
-                Serial.print(" from addr "); Serial.print(addr);
-                Serial.print(" = "); Serial.println(*item->intValue);
+                *item->intValue = preferences.getInt(item->prefKey, *item->intValue);
             }
             break;
             
         case MENU_ITEM_VALUE_FLOAT:
             if (item->floatValue) {
-                EEPROM.get(addr, *item->floatValue);
-                Serial.print("Load "); Serial.print(item->prefKey);
-                Serial.print(" from addr "); Serial.print(addr);
-                Serial.print(" = "); Serial.println(*item->floatValue);
+                *item->floatValue = preferences.getFloat(item->prefKey, *item->floatValue);
             }
             break;
             
         case MENU_ITEM_BOOL:
             if (item->boolValue) {
-                *item->boolValue = EEPROM.read(addr);
-                Serial.print("Load "); Serial.print(item->prefKey);
-                Serial.print(" from addr "); Serial.print(addr);
-                Serial.print(" = "); Serial.println(*item->boolValue);
+                *item->boolValue = preferences.getBool(item->prefKey, *item->boolValue);
             }
             break;
             
@@ -416,38 +391,22 @@ void MenuController::loadValueFromPrefs(MenuItem* item) {
 void MenuController::saveValueToPrefs(MenuItem* item) {
     if (!prefsInitialized || !item->prefKey) return;
     
-    // Generate a simple hash from prefKey for EEPROM address
-    int addr = eepromAddress;
-    for (const char* p = item->prefKey; *p; p++) {
-        addr += *p;
-    }
-    addr = (addr % 100) * 4;  // Space out by 4 bytes, keep within first 400 bytes
-    
     switch (item->type) {
         case MENU_ITEM_VALUE_INT:
             if (item->intValue) {
-                EEPROM.put(addr, *item->intValue);
-                Serial.print("Save "); Serial.print(item->prefKey);
-                Serial.print(" to addr "); Serial.print(addr);
-                Serial.print(" = "); Serial.println(*item->intValue);
+                preferences.putInt(item->prefKey, *item->intValue);
             }
             break;
             
         case MENU_ITEM_VALUE_FLOAT:
             if (item->floatValue) {
-                EEPROM.put(addr, *item->floatValue);
-                Serial.print("Save "); Serial.print(item->prefKey);
-                Serial.print(" to addr "); Serial.print(addr);
-                Serial.print(" = "); Serial.println(*item->floatValue);
+                preferences.putFloat(item->prefKey, *item->floatValue);
             }
             break;
             
         case MENU_ITEM_BOOL:
             if (item->boolValue) {
-                EEPROM.write(addr, *item->boolValue);
-                Serial.print("Save "); Serial.print(item->prefKey);
-                Serial.print(" to addr "); Serial.print(addr);
-                Serial.print(" = "); Serial.println(*item->boolValue);
+                preferences.putBool(item->prefKey, *item->boolValue);
             }
             break;
             
@@ -459,7 +418,7 @@ void MenuController::saveValueToPrefs(MenuItem* item) {
 void MenuController::saveAllSettings() {
     if (!prefsInitialized) return;
     
-    Serial.println("Saving all settings...");
+    logger.debug("Prefs", "Saving all settings...");
     
     // Iterate through all layers and items
     for (uint8_t l = 0; l < layerCount; l++) {
@@ -468,13 +427,13 @@ void MenuController::saveAllSettings() {
         }
     }
     
-    Serial.println("All settings saved");
+    logger.debug("Prefs", "All settings saved");
 }
 
 void MenuController::loadAllSettings() {
     if (!prefsInitialized) return;
     
-    Serial.println("Loading all settings...");
+    logger.debug("Prefs", "Loading all settings...");
     
     // Iterate through all layers and items
     for (uint8_t l = 0; l < layerCount; l++) {
@@ -483,7 +442,7 @@ void MenuController::loadAllSettings() {
         }
     }
     
-    Serial.println("All settings loaded");
+    logger.debug("Prefs", "All settings loaded");
 }
 
 void MenuController::reset() {
@@ -492,8 +451,6 @@ void MenuController::reset() {
     currentState = MENU_STATE_BROWSING;
     stackPointer = 0;
     editingItem = nullptr;
-    
-    Serial.println("MenuController reset");
     
     // Update display
     if (displayCallback) {

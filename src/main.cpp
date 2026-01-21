@@ -24,7 +24,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <Servo.h>
+#include "SimpleServo.h"
 
 // Configuration includes
 #include "HardwareConfig.h"
@@ -37,13 +37,15 @@
 #include <MenuController.h>
 #include <DisplayController.h>
 #include <LogController.h>
+#include <ScaleController.h>
 
 // ==================== GLOBAL OBJECTS ====================
 
 ButtonController buttonController;
 MenuController menuController;
 DisplayController displayController;
-Servo starchServo;
+ScaleController scaleController;
+SimpleServo starchServo;
 
 // ==================== RELAY STATE TRACKING ====================
 
@@ -55,30 +57,30 @@ int servoAngle = 0;  // Current servo angle (0-180)
 
 // Relay names for display
 const char* relayNames[24] = {
-    "Spare 1",          // 0  - PCF8575_1 P0
-    "Heater",           // 1  - PCF8575_1 P1
-    "Spare 2",          // 2  - PCF8575_1 P2
-    "Valve",            // 3  - PCF8575_1 P3
-    "Shredder Power",   // 4  - PCF8575_1 P4
-    "Mixer",            // 5  - PCF8575_1 P5
-    "Pump",             // 6  - PCF8575_1 P6
-    "Spare 3",          // 7  - PCF8575_1 P7
-    "Defective 1",      // 8  - PCF8575_1 P8
-    "Screw",            // 9  - PCF8575_1 P9
-    "Conveyor",         // 10 - PCF8575_1 P10
-    "Defective 2",      // 11 - PCF8575_1 P11
-    "Shredder Trigger", // 12 - PCF8575_1 P12
-    "Linear Door",      // 13 - PCF8575_1 P13
-    "Spare 5",          // 14 - PCF8575_1 P14
-    "Spare 6",          // 15 - PCF8575_1 P15
-    "Vacuum",           // 16 - PCF8575_2 P0
-    "Blower",           // 17 - PCF8575_2 P1
-    "Mould A V/B",      // 18 - PCF8575_2 P2
-    "Vacuum A/B",       // 19 - PCF8575_2 P3
-    "Blower A/B",       // 20 - PCF8575_2 P4
-    "Mould B V/B",      // 21 - PCF8575_2 P5
-    "Fwd/Rev",          // 22 - PCF8575_2 P6
-    "Up/Down"           // 23 - PCF8575_2 P7
+    "Spare 1",              // 0  - PCF8575_1 P0
+    "Spare 2",              // 1  - PCF8575_1 P1
+    "Linear Door",          // 2  - PCF8575_1 P2
+    "Spare 3",              // 3  - PCF8575_1 P3
+    "Defective",            // 4  - PCF8575_1 P4
+    "Conveyor",             // 5  - PCF8575_1 P5
+    "Screw",                // 6  - PCF8575_1 P6
+    "Defective",            // 7  - PCF8575_1 P7
+    "Shredder Power",       // 8  - PCF8575_1 P8 (ON/OFF)
+    "Pump",                 // 9  - PCF8575_1 P9
+    "Mixer",                // 10 - PCF8575_1 P10
+    "Shredder Main Power",  // 11 - PCF8575_1 P11
+    "Valve",                // 12 - PCF8575_1 P12
+    "Spare 4",              // 13 - PCF8575_1 P13
+    "Heater",               // 14 - PCF8575_1 P14
+    "Spare 5",              // 15 - PCF8575_1 P15
+    "Vacuum",               // 16 - PCF8575_2 P0
+    "Blower",               // 17 - PCF8575_2 P1
+    "Mould A V/B",          // 18 - PCF8575_2 P2
+    "Vacuum A/B",           // 19 - PCF8575_2 P3
+    "Blower A/B",           // 20 - PCF8575_2 P4
+    "Mould B V/B",          // 21 - PCF8575_2 P5
+    "Fwd/Rev",              // 22 - PCF8575_2 P6
+    "Up/Down"               // 23 - PCF8575_2 P7
 };
 
 // ==================== FORWARD DECLARATIONS ====================
@@ -149,18 +151,18 @@ void toggleRelay23() { toggleRelay(23); }
 // Servo control functions
 void setServoAngle(int angle) {
     if (angle < 0) angle = 0;
-    if (angle > 180) angle = 180;
+    if (angle > 270) angle = 270;
     servoAngle = angle;
     starchServo.write(servoAngle);
     logger.info("Servo", "Angle set to", servoAngle);
 }
 
 void toggleServo() {
-    if (servoAngle == 180) {
+    if (servoAngle == 240) {
         setServoAngle(0);   // Close position
         displayController.showStatus("Servo: Close", 1000);
     } else {
-        setServoAngle(180); // Open position
+        setServoAngle(240); // Open position
         displayController.showStatus("Servo: Open", 1000);
     }
     menuController.refresh();
@@ -169,14 +171,14 @@ void toggleServo() {
 // ==================== MENU ACTION FUNCTIONS ====================
 
 void startAutoRun() {
-    Serial.println("Starting Auto Run...");
+    logger.info("AutoRun", "Starting Auto Run...");
     systemRunning = true;
     systemStatus = "Running";
     displayController.showStatus("Starting Auto Run", 2000);
 }
 
 void stopAutoRun() {
-    Serial.println("Stopping Auto Run...");
+    logger.info("AutoRun", "Stopping Auto Run...");
     systemRunning = false;
     systemStatus = "Stopped";
     displayController.showStatus("Stopped", 1000);
@@ -198,14 +200,56 @@ void exitTestMode() {
 }
 
 void saveSettings() {
-    Serial.println("Saving all settings...");
+    logger.info("Settings", "Saving all settings...");
     menuController.saveAllSettings();
     displayController.showStatus("Settings Saved!", 2000);
 }
 
 void resetToDefaults() {
-    Serial.println("Reset to defaults...");
+    logger.info("Settings", "Reset to defaults...");
     displayController.showStatus("Reset Defaults", 2000);
+}
+
+// ==================== SCALE CALIBRATION FUNCTIONS ====================
+
+void calibrateScaleZero() {
+    logger.info("Scale", "Starting zero calibration...");
+    displayController.showStatus("Remove all weight", 2000);
+    delay(2000);
+    displayController.showStatus("Calibrating...", 1000);
+    
+    if (scaleController.calibrateZero()) {
+        scaleController.saveCalibration();
+        displayController.showStatus("Zero Set!", 2000);
+        logger.info("Scale", "Zero calibration successful");
+    } else {
+        displayController.showStatus("Zero Failed!", 2000);
+        logger.error("Scale", "Zero calibration failed");
+    }
+}
+
+void calibrateScaleWithWeight() {
+    logger.info("Scale", "Starting weight calibration...");
+    
+    char msg[21];
+    snprintf(msg, 21, "Place %dg weight", scaleCalibrationWeight);
+    displayController.showStatus(msg, 3000);
+    delay(3000);
+    displayController.showStatus("Calibrating...", 1000);
+    
+    if (scaleController.calibrateKnownWeight(scaleCalibrationWeight)) {
+        scaleController.saveCalibration();
+        displayController.showStatus("Calibrated!", 2000);
+        logger.info("Scale", "Calibration successful");
+    } else {
+        displayController.showStatus("Cal Failed!", 2000);
+        logger.error("Scale", "Calibration failed");
+    }
+}
+
+void saveScaleCalibration() {
+    scaleController.saveCalibration();
+    displayController.showStatus("Scale Cal Saved!", 2000);
 }
 
 // ==================== DISPLAY CALLBACK ====================
@@ -225,12 +269,6 @@ void setup() {
     Serial.begin(115200);
     delay(2000);  // Wait for serial to be ready
     
-    // Send some test output to verify serial is working
-    Serial.println("\n\n\n");
-    Serial.println("========================================");
-    Serial.println("Serial Monitor Connected");
-    Serial.println("========================================");
-    
     // Initialize logger with DEBUG level
     logger.init(LOG_DEBUG, true);
     
@@ -238,9 +276,11 @@ void setup() {
     logger.info("MAIN", "Egg Tray Moulder Machine v1.0");
     logger.separator();
     
-    // Initialize I2C (uses default pins: SDA=20, SCL=21 on Arduino Mega)
-    Wire.begin();
-    logger.info("I2C", "Initialized on default pins (SDA=20, SCL=21)");
+    // Initialize I2C for ESP32-WROOM DevKit (SDA=21, SCL=22)
+    Wire.begin(21, 22);
+    Wire.setClock(100000);  // Set to 100kHz for better stability
+    delay(100);  // Allow I2C to stabilize
+    logger.info("I2C", "Initialized on ESP32 pins (SDA=21, SCL=22) at 100kHz");
     
     // Initialize PCF8575 expanders
     pcf8575_1.begin();
@@ -279,11 +319,23 @@ void setup() {
     servoAngle = 0;
     logger.info("Servo", "Initialized on pin", SERVO_PIN);
     
+    // Initialize scale controller (NAU7802)
+    if (scaleController.init()) {
+        logger.info("Scale", "NAU7802 initialized successfully");
+        if (scaleController.isCalibrated()) {
+            logger.info("Scale", "Calibration loaded from Preferences");
+        } else {
+            logger.warning("Scale", "Not calibrated - please calibrate");
+        }
+    } else {
+        logger.error("Scale", "NAU7802 initialization failed!");
+    }
+    
     // Test reading direct GPIO pins before button init
     logger.info("GPIO", "Reading button pins before init...");
-    logger.info("GPIO", "Pin 2 (Up)", digitalRead(BTN_UP) ? "HIGH" : "LOW");
-    logger.info("GPIO", "Pin 3 (Enter)", digitalRead(BTN_ENTER) ? "HIGH" : "LOW");
-    logger.info("GPIO", "Pin 4 (Down)", digitalRead(BTN_DOWN) ? "HIGH" : "LOW");
+    logger.info("GPIO", "BTN_UP", digitalRead(BTN_UP) ? "HIGH" : "LOW");
+    logger.info("GPIO", "BTN_ENTER", digitalRead(BTN_ENTER) ? "HIGH" : "LOW");
+    logger.info("GPIO", "BTN_DOWN", digitalRead(BTN_DOWN) ? "HIGH" : "LOW");
     
     // Initialize buttons (now using direct GPIO, not PCF8575)
     logger.debug("BTN", "Initializing buttons...");
@@ -316,9 +368,9 @@ void loop() {
     // Read raw GPIO pin states every second for debugging
     static unsigned long lastRawRead = 0;
     if (millis() - lastRawRead > 1000) {
-        logger.debug("RAW", "Pin 2 (Up)", digitalRead(BTN_UP) ? "HIGH" : "LOW");
-        logger.debug("RAW", "Pin 3 (Enter)", digitalRead(BTN_ENTER) ? "HIGH" : "LOW");
-        logger.debug("RAW", "Pin 4 (Down)", digitalRead(BTN_DOWN) ? "HIGH" : "LOW");
+        logger.debug("RAW", "BTN_UP", digitalRead(BTN_UP) ? "HIGH" : "LOW");
+        logger.debug("RAW", "BTN_ENTER", digitalRead(BTN_ENTER) ? "HIGH" : "LOW");
+        logger.debug("RAW", "BTN_DOWN", digitalRead(BTN_DOWN) ? "HIGH" : "LOW");
         lastRawRead = millis();
     }
     
@@ -379,13 +431,13 @@ void loop() {
     // Update display cursor blinking
     displayController.update();
     
+    // Check display health and recover if needed
+    displayController.checkHealth();
+    
     // Process auto run if running
     if (systemRunning) {
         processAutoRun();
     }
-    
-    // Small delay for stability
-    delay(10);
 }
 
 // ==================== PROCESS FUNCTIONS ====================

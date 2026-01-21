@@ -22,6 +22,15 @@ private:
     unsigned long lastBlinkTime;
     bool cursorVisible;
     static const unsigned long BLINK_INTERVAL = 500; // 500ms blink rate
+    
+    // I2C health monitoring
+    unsigned long lastHealthCheck;
+    uint8_t consecutiveFailures;
+    static const unsigned long HEALTH_CHECK_INTERVAL = 10000; // Check every 10 seconds
+    static const uint8_t MAX_FAILURES_BEFORE_RESET = 2;
+    
+    // I2C communication check
+    bool checkI2CConnection();
 
 public:
     DisplayController();
@@ -52,6 +61,12 @@ public:
     
     // Show status message (temporary)
     void showStatus(const char* message, unsigned long duration = 2000);
+    
+    // Health check and recovery (call in loop)
+    void checkHealth();
+    
+    // Force refresh current display (clears garbage)
+    void forceRefresh();
     
     // Utility functions
     void centerText(char* buffer, const char* text, uint8_t width);

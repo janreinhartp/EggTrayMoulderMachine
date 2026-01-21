@@ -38,6 +38,9 @@ extern int dryingTemp;           // degrees C
 // ==================== CONVEYOR ====================
 extern int conveyorSpeed;        // percentage
 
+// ==================== SCALE CALIBRATION ====================
+extern int scaleCalibrationWeight; // grams - known weight for calibration
+
 // ==================== SYSTEM STATE ====================
 extern bool testMode;
 extern bool systemRunning;

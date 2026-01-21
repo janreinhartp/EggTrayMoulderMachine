@@ -11,8 +11,8 @@
 
 // ==================== I2C CONFIGURATION ====================
 
-// I2C Pins - Arduino Mega defaults (SDA=20, SCL=21)
-// No need to define as Wire.begin() uses hardware I2C
+// ESP32-WROOM DevKit I2C pins (used via Wire.begin(21,22))
+// SDA = 21, SCL = 22
 
 // I2C Addresses
 #define PCF8575_1_ADDRESS 0x25  // PCF8575 #1 - 16 Channel Relay
@@ -20,23 +20,23 @@
 #define LCD_I2C_ADDRESS 0x27    // LCD I2C Display
 #define ADS1115_ADDRESS 0x48    // ADS1115 ADC
 
-// ==================== DIRECT GPIO PINS ====================
+// ==================== DIRECT GPIO PINS (ESP32-WROOM DevKit) ====================
 
-// Button pins (direct GPIO on Arduino Mega)
-#define BTN_UP 2
-#define BTN_ENTER 3
-#define BTN_DOWN 4
+// Button pins (use GPIOs with internal pullups)
+#define BTN_UP 25
+#define BTN_ENTER 26
+#define BTN_DOWN 27
 
-// Sensor pins (direct GPIO on Arduino Mega)
-#define SENSOR_WATER_FLOW 6
-#define SENSOR_IR_TRAY 7
+// Sensor pins
+#define SENSOR_WATER_FLOW 32
+#define SENSOR_IR_TRAY 19
 
-// Servo pin (direct GPIO)
-#define SERVO_PIN 5
+// Servo pin
+#define SERVO_PIN 33
 
 // HX711 Load Cell Amplifier
-#define HX711_DOUT_PIN 2
-#define HX711_SCK_PIN 3
+#define HX711_DOUT_PIN 16
+#define HX711_SCK_PIN 17
 
 // ==================== PCF8575 OBJECTS ====================
 

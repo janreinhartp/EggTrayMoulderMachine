@@ -30,6 +30,9 @@ int dryingTemp = 80;             // degrees C
 // ==================== CONVEYOR ====================
 int conveyorSpeed = 50;          // percentage
 
+// ==================== SCALE CALIBRATION ====================
+int scaleCalibrationWeight = 500; // grams - known weight for calibration
+
 // ==================== SYSTEM STATE ====================
 bool testMode = false;
 bool systemRunning = false;

@@ -18,6 +18,7 @@ MenuItem settingsMenuItems[SETTINGS_MENU_COUNT] = {
     {"Mixer", MENU_ITEM_SUBMENU, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Moulding", MENU_ITEM_SUBMENU, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Drying", MENU_ITEM_SUBMENU, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Scale Calibrate", MENU_ITEM_SUBMENU, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Save All", MENU_ITEM_ACTION, saveSettings, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Back", MENU_ITEM_BACK, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr}
 };
@@ -64,17 +65,25 @@ MenuItem dryingMenuItems[DRYING_MENU_COUNT] = {
     {"Back", MENU_ITEM_BACK, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr}
 };
 
+// Scale calibration submenu
+MenuItem scaleCalMenuItems[SCALE_CAL_MENU_COUNT] = {
+    {"Cal Weight", MENU_ITEM_VALUE_INT, nullptr, nullptr, 0, &scaleCalibrationWeight, nullptr, nullptr, 100, 5000, 50, "g", "scaleCalWt"},
+    {"Zero Scale", MENU_ITEM_ACTION, calibrateScaleZero, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Calibrate", MENU_ITEM_ACTION, calibrateScaleWithWeight, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Back", MENU_ITEM_BACK, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr}
+};
+
 // Test mode menu items
 MenuItem testMenuItems[TEST_MENU_COUNT] = {
-    {"Heater", MENU_ITEM_ACTION, toggleRelay1, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Valve", MENU_ITEM_ACTION, toggleRelay3, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Shredder Power", MENU_ITEM_ACTION, toggleRelay4, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Mixer", MENU_ITEM_ACTION, toggleRelay5, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Pump", MENU_ITEM_ACTION, toggleRelay6, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Screw", MENU_ITEM_ACTION, toggleRelay9, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Conveyor", MENU_ITEM_ACTION, toggleRelay10, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Heater", MENU_ITEM_ACTION, toggleRelay14, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Valve", MENU_ITEM_ACTION, toggleRelay12, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Shredder Power", MENU_ITEM_ACTION, toggleRelay8, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Mixer", MENU_ITEM_ACTION, toggleRelay10, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Pump", MENU_ITEM_ACTION, toggleRelay9, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Screw", MENU_ITEM_ACTION, toggleRelay6, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Conveyor", MENU_ITEM_ACTION, toggleRelay5, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Shredder Trigger", MENU_ITEM_ACTION, toggleRelay12, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
-    {"Linear Door", MENU_ITEM_ACTION, toggleRelay13, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
+    {"Linear Door", MENU_ITEM_ACTION, toggleRelay2, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Vacuum", MENU_ITEM_ACTION, toggleRelay16, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Blower", MENU_ITEM_ACTION, toggleRelay17, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
     {"Mould A V/B", MENU_ITEM_ACTION, toggleRelay18, nullptr, 0, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr},
@@ -103,6 +112,7 @@ MenuLayer menuLayers[TOTAL_LAYERS] = {
     {"MIXER", mixerMenuItems, MIXER_MENU_COUNT},
     {"MOULDING", mouldingMenuItems, MOULDING_MENU_COUNT},
     {"DRYING", dryingMenuItems, DRYING_MENU_COUNT},
+    {"SCALE CALIBRATE", scaleCalMenuItems, SCALE_CAL_MENU_COUNT},
     {"TEST MACHINE", testMenuItems, TEST_MENU_COUNT},
     {"RUNNING", runningMenuItems, RUNNING_MENU_COUNT}
 };
@@ -135,4 +145,7 @@ void linkMenus() {
     
     settingsMenuItems[5].subMenu = dryingMenuItems;
     settingsMenuItems[5].subMenuSize = DRYING_MENU_COUNT;
+    
+    settingsMenuItems[6].subMenu = scaleCalMenuItems;
+    settingsMenuItems[6].subMenuSize = SCALE_CAL_MENU_COUNT;
 }

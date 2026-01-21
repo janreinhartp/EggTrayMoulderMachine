@@ -11,6 +11,8 @@ DisplayController::DisplayController() {
     currentEditMode = false;
     lastBlinkTime = 0;
     cursorVisible = true;
+    lastHealthCheck = 0;
+    consecutiveFailures = 0;
 }
 
 DisplayController::~DisplayController() {
@@ -24,13 +26,24 @@ void DisplayController::init(uint8_t address, uint8_t cols, uint8_t rows_) {
     columns = cols;
     rows = rows_;
     
+    // Add delay for I2C stability on ESP32
+    delay(100);
+    
     // Create LCD object
     lcd = new LiquidCrystal_I2C(i2cAddress, columns, rows);
     
-    // Initialize LCD
+    // Initialize LCD with delays for ESP32
     lcd->init();
+    delay(50);
     lcd->backlight();
+    delay(50);
     lcd->clear();
+    delay(50);
+    
+    // Test write to confirm LCD is working
+    lcd->setCursor(0, 0);
+    lcd->print("Initializing...");
+    delay(100);
     
     initialized = true;
     
@@ -51,9 +64,8 @@ void DisplayController::displayText(const char* line1, const char* line2, bool e
         currentLine2 = l2;
         currentEditMode = editing;
         
-        // Clear display properly
+        // Clear display
         lcd->clear();
-        delay(5); // Small delay for LCD to process
         
         // Line 1 - pad with spaces to clear remnants
         lcd->setCursor(0, 0);
@@ -90,7 +102,6 @@ void DisplayController::displayText4Line(const char* line1, const char* line2, c
     
     // Clear display
     lcd->clear();
-    delay(5);
     
     // Line 1 (row 0)
     lcd->setCursor(0, 0);
@@ -210,5 +221,80 @@ void DisplayController::centerText(char* buffer, const char* text, uint8_t width
         memcpy(buffer + padding, text, textLen);
     } else {
         memcpy(buffer, text, width);
+    }
+}
+
+bool DisplayController::checkI2CConnection() {
+    // Try to communicate with LCD via I2C
+    Wire.beginTransmission(i2cAddress);
+    uint8_t error = Wire.endTransmission();
+    return (error == 0);  // 0 = success
+}
+
+void DisplayController::forceRefresh() {
+    if (!initialized || !lcd) return;
+    
+    // Save current content
+    String savedLine1 = currentLine1;
+    String savedLine2 = currentLine2;
+    bool savedEditMode = currentEditMode;
+    
+    // Clear and redraw
+    lcd->clear();
+    delay(5);
+    
+    // Force redraw by clearing current state
+    currentLine1 = "";
+    currentLine2 = "";
+    displayText(savedLine1.c_str(), savedLine2.c_str(), savedEditMode);
+}
+
+void DisplayController::checkHealth() {
+    if (!initialized) return;
+    
+    unsigned long currentTime = millis();
+    
+    // Only check periodically to avoid I2C bus congestion
+    if (currentTime - lastHealthCheck < HEALTH_CHECK_INTERVAL) {
+        return;
+    }
+    
+    lastHealthCheck = currentTime;
+    
+    // Check I2C connection
+    if (!checkI2CConnection()) {
+        consecutiveFailures++;
+        Serial.print("LCD I2C failure detected (");
+        Serial.print(consecutiveFailures);
+        Serial.println("/2)");
+        
+        // If multiple failures, reinitialize LCD
+        if (consecutiveFailures >= MAX_FAILURES_BEFORE_RESET) {
+            Serial.println("LCD reinitialization triggered!");
+            
+            // Delete and recreate LCD object
+            if (lcd) {
+                delete lcd;
+            }
+            
+            lcd = new LiquidCrystal_I2C(i2cAddress, columns, rows);
+            lcd->init();
+            lcd->backlight();
+            lcd->clear();
+            
+            // Restore display content
+            if (currentLine1.length() > 0) {
+                displayText(currentLine1.c_str(), currentLine2.c_str(), currentEditMode);
+            }
+            
+            consecutiveFailures = 0;
+            Serial.println("LCD reinitialized successfully");
+        }
+    } else {
+        // Connection OK, reset failure counter
+        if (consecutiveFailures > 0) {
+            Serial.println("LCD I2C connection restored");
+            consecutiveFailures = 0;
+        }
     }
 }

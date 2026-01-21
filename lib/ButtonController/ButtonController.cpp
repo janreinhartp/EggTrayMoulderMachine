@@ -63,13 +63,13 @@ ButtonState Button::update() {
         lastLoggedState = reading;
     }
     
-    // Debounce logic
+    // Debounce logic - simplified for faster response
     if (reading != lastState) {
         char msg[50];
         sprintf(msg, "Pin %d changed to", pin);
         logger.debug("Button", msg, reading ? "HIGH" : "LOW");
         lastState = reading;
-        return BUTTON_IDLE;
+        // Continue processing instead of returning IDLE
     }
     
     // Button just pressed (transition from HIGH to LOW)
